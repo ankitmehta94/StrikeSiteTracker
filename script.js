@@ -1,9 +1,22 @@
+//UTILS
 function convertLatLngStringToObj(LatLngString) {
   const array = LatLngString.split(",");
   return {
     lat: Number(array[0]),
     lng: Number(array[1]),
   };
+}
+function formatDateToMMDDYYYY(dateString) {
+  const dateArray = dateString.split("-");
+  return `${dateArray[1]}/${dateArray[2]}/${dateArray[0]}`;
+}
+function selectCreator(ArrayOfOptions, element) {
+  ArrayOfOptions.forEach((val) => {
+    var option = document.createElement("option");
+    option.value = val;
+    option.text = val;
+    element.appendChild(option);
+  });
 }
 function mysql_real_escape_string(str) {
   return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
@@ -31,6 +44,9 @@ function mysql_real_escape_string(str) {
     }
   });
 }
+// CONSTANTS
+const reportFormLink = 'https://docs.google.com/forms/d/e/1FAIpQLSdNP8zfmUU7jcrFVAS4fuP-EUUD2J86P11YlFXd7dE7Nn21zQ/viewform'
+// OPTION LISTS
 const STATE_LIST = [
   "Alabama",
   "Alaska",
@@ -93,49 +109,81 @@ const STATE_LIST = [
   "Wyoming",
 ];
 const INDUSTRY_LIST = [
-  "Agriculture, Forestry, Fishing & Hunting",
-  "Mining",
-  "Utilities",
-  "Construction",
-  "Manufacturing",
-  "Wholesale Trade",
-  "Retail Trade",
-  "Transportation and Warehousing",
-  "Real Estate and Rental and Leasing",
-  "Professional, Scientific and Technical Services",
-  "Management of Companies and Enterprises",
+  "Accommodation and Food Services",
   "Administrative and Support and Waste Management",
+  "Agriculture",
+  "Arts",
+  "Central Administrative Office Activity",
+  "Construction",
   "Educational Services",
-  "Information",
   "Finance and Insurance",
   "Health Care and Social Assistance",
-  "Arts, Entertainment and Recreation",
-  "Accommodation and Food Services",
+  "Information",
+  "Management of Companies and Enterprises",
+  "Manufacturing",
+  "Mining",
   "Other Services (except Public Administration)",
-  "Central Administrative Office Activity",
+  "Professional",
   "Public Administration",
+  "Real Estate and Rental and Leasing",
+  "Retail Trade",
+  "Transportation and Warehousing",
+  "Utilities",
+  "Wholesale Trade",
+  "Entertainment and Recreation",
+  "Fishing & Hunting",
+  "Forestry,Scientific and Technical Services",
 ];
 const WORKER_DEMAND = [
-  "Pay",
-  "Healthcare",
-  "COVID-19 protocols",
-  "Health and safety",
-  "First contract",
-  "Racial justice",
   "$15 minimum wage",
+  "COVID-19 protocols",
+  "First contract",
+  "Health and safety",
+  "Healthcare",
+  "Job Security",
+  "Pandemic Relief",
+  "Pay",
+  "Racial justice",
   "Staffing",
 ];
-
-function formatDate(d) {
-  (month = "" + (d.getMonth() + 1)),
-    (day = "" + d.getDate()),
-    (year = d.getFullYear());
-
-  if (month.length < 2) month = "0" + month;
-  if (day.length < 2) day = "0" + day;
-
-  return [year, month, day].join("-");
-}
+// Bargaining Unit Size
+const UNIT_SIZE = {
+  "Less than 100": "Bargaining_Unit_Size < 100",
+  "Between 100 and 199":
+    "Bargaining_Unit_Size >= 100 AND Bargaining_Unit_Size < 200",
+  "Between 200 and 299":
+    "Bargaining_Unit_Size >= 200 AND Bargaining_Unit_Size <= 299",
+  "Between 300 and 499":
+    "Bargaining_Unit_Size >= 300 AND Bargaining_Unit_Size <= 499",
+  "Between 500 and 1999":
+    "Bargaining_Unit_Size >= 500 AND Bargaining_Unit_Size <= 1999",
+  "Greater than 2000": "Bargaining_Unit_Size >= 2000",
+};
+const DURATION_UNIT_DAY_CONDITION = ` AND Duration_Unit LIKE '%Days%'`;
+const DURATION_UNIT_LESS_THAN_DAY_CONDITION = `(Duration_Amount <= 1 AND Duration_Unit LIKE '%Days%') OR ((Duration_Unit LIKE '%Hours%') OR (Duration_Unit LIKE '%Minutes%'))`;
+const DURATION_ARRAY = {
+  "1 day or less": DURATION_UNIT_LESS_THAN_DAY_CONDITION,
+  "2-7 days":
+    "Duration_Amount >= 2 AND Duration_Amount < 8" +
+    DURATION_UNIT_DAY_CONDITION,
+  "8-30 days":
+    "Duration_Amount >= 8 AND Duration_Amount <= 30" +
+    DURATION_UNIT_DAY_CONDITION,
+  "31+ days": "Duration_Amount >= 31" + DURATION_UNIT_DAY_CONDITION,
+};
+const NO_OF_EMPLOEES = {
+  "Less than 100": "Approximate_Number_of_Employees < 100",
+  "Between 100 and 199":
+    "Approximate_Number_of_Employees >= 100 AND Approximate_Number_of_Employees < 200",
+  "Between 200 and 299":
+    "Approximate_Number_of_Employees >= 200 AND Approximate_Number_of_Employees <= 299",
+  "Between 300 and 499":
+    "Approximate_Number_of_Employees >= 300 AND Approximate_Number_of_Employees <= 499",
+  "Between 500 and 1999":
+    "Approximate_Number_of_Employees >= 500 AND Approximate_Number_of_Employees <= 1999",
+  "Greater than 2000": "Approximate_Number_of_Employees >= 2000",
+};
+// TABLE COLUMN NAMES
 const tableDict = {
   Employer: {
     name: "Employer",
@@ -144,10 +192,10 @@ const tableDict = {
   "Labor Organization": {
     name: "Labor_Organization",
     type: "string",
-    "filter": filterLabourOrganization
+    filter: filterLabourOrganization,
   },
-  "Union Local": {
-    name: "Union_Local",
+  Local: {
+    name: "Local",
     type: "string",
   },
   Industry: {
@@ -160,8 +208,8 @@ const tableDict = {
     type: "number",
     filter: filterUnitSize,
   },
-  "Number of Strike Location": {
-    name: "Number_of_Strike_Location",
+  "Number of Locations": {
+    name: "Number_of_Locations",
     type: "number",
   },
   "Latitude, Longitude": {
@@ -185,12 +233,12 @@ const tableDict = {
     name: "Zip_Code",
     type: "string",
   },
-  "Strike or Protest or Lockout": {
-    name: "Strike_or_Protest_or_Lockout",
+  "Strike or Protest": {
+    name: "Strike_or_Protest",
     type: "string",
     filter: filterType,
   },
-  "Approximate  Number of Employees": {
+  "Approximate Number of Participants": {
     name: "Approximate_Number_of_Employees",
     type: "number",
     filter: filterNoOfEmp,
@@ -207,6 +255,7 @@ const tableDict = {
   "Duration Amount": {
     name: "Duration_Amount",
     type: "number",
+    filter: filterDuration,
   },
   "Duration Unit": {
     name: "Duration_Unit",
@@ -234,43 +283,68 @@ const tableDict = {
     name: "positionId",
     type: "string",
   },
-  connectedRow:{
+  connectedRow: {
     name: "connectedRow",
     type: "string",
-  }
+  },
+  Notes: {
+    name: "Notes",
+    type: "string",
+  },
 };
 const OR = " OR ";
+
+//FILTER FUNCTIONS
 function filterDate(params) {
   if (params.fromDate && params.endDate)
     return `Start_Date >= '${params.fromDate}' and Start_Date <= '${params.endDate}'`;
   else return "";
 }
 function filterLabourOrganization(params) {
-  console.log(params.searchTextLO)
-  if(params.searchTextLO)
-    return `Labor_Organization LIKE '%${params.searchTextLO}%'`
-  else return ''
+  if (params.searchTextLO)
+    return `Labor_Organization LIKE '%${params.searchTextLO}%'`;
+  else return "";
 }
 function filterUnitSize(params) {
-  if (params.unitSize != params.maxUnitSize)
-    return `Bargaining_Unit_Size <= ${params.unitSize}`;
-  else return "";
+  let filterString = "";
+  params.unitSize.forEach((unitSizeKey, index) => {
+    if (index !== 0) {
+      filterString += OR;
+    }
+    filterString += `(${UNIT_SIZE[unitSizeKey]})`;
+  });
+  return filterString ? `(${filterString})` : "";
 }
 function filterNoOfEmp(params) {
-  if (params.NoOfEmp != params.maxNoOfEmp)
-    return `Approximate_Number_of_Employees <= ${params.NoOfEmp}`;
-  else return "";
+  let filterString = "";
+  params.NoOfEmp.forEach((empKey, index) => {
+    if (index !== 0) {
+      filterString += OR;
+    }
+    filterString += `(${NO_OF_EMPLOEES[empKey]})`;
+  });
+  return filterString ? `(${filterString})` : "";
+}
+function filterDuration(params) {
+  let filterString = "";
+  params.duration.forEach((durationKey, index) => {
+    if (index !== 0) {
+      filterString += OR;
+    }
+    filterString += `(${DURATION_ARRAY[durationKey]})`;
+  });
+  return filterString ? `(${filterString})` : "";
 }
 function filterType(params) {
   let filterString = "";
-  
+
   params.typeArray.forEach((type, index) => {
     if (index !== 0) {
       filterString += OR;
     }
-    filterString += `Strike_or_Protest_or_Lockout LIKE '%${type}%'`;
+    filterString += `Strike_or_Protest LIKE '%${type}%'`;
   });
-  return filterString?`(${filterString})`:'';
+  return filterString ? `(${filterString})` : "";
 }
 function filterIndustry(params) {
   let filterString = "";
@@ -280,8 +354,8 @@ function filterIndustry(params) {
     }
     filterString += `Industry LIKE '%${ind}%'`;
   });
-  return filterString?`(${filterString})`:'';
-  }
+  return filterString ? `(${filterString})` : "";
+}
 
 function filterStates(params) {
   let filterString = "";
@@ -291,7 +365,7 @@ function filterStates(params) {
     }
     filterString += `State LIKE '%${st}%'`;
   });
-  return filterString?`(${filterString})`:'';
+  return filterString ? `(${filterString})` : "";
 }
 function filterWorkerDemands(params) {
   let filterString = "";
@@ -301,7 +375,7 @@ function filterWorkerDemands(params) {
     }
     filterString += `Worker_Demands LIKE '%${wd}%'`;
   });
-  return filterString?`(${filterString})`:'';
+  return filterString ? `(${filterString})` : "";
 }
 function filterAuthorized(params) {
   let filterString = "";
@@ -310,8 +384,8 @@ function filterAuthorized(params) {
   }
   return filterString;
 }
+// CONVERT JSON INTO SQL DATABASE (PREPROCESSING DATA)
 async function createTableAndInsertValues() {
-
   //  TABLE CREATION STING
   let createTableColStringAndType = "";
   let createTableColString = "";
@@ -332,8 +406,7 @@ async function createTableAndInsertValues() {
   const geodatalen = window.geodata.length;
   console.log(geodatalen);
   window.geodata.forEach((obj, geoindex) => {
-    const strikeNumber = Number(obj["Number of Strike Location"]) || 1;
-    // IF MULTIPLE LOCATION STRIKE
+    const strikeNumber = Number(obj["Number of Locations"]) || 1;
     if (strikeNumber > 1) {
       const latlngArray = obj["Latitude, Longitude"].split(";");
       const addressArray = obj["Address"].split(";");
@@ -395,7 +468,7 @@ async function createTableAndInsertValues() {
           }
         });
       } else {
-        console.log("Length", obj["positionId"]);
+        console.log("Length", obj);
         console.error("Mismatch");
       }
     }
@@ -429,10 +502,11 @@ async function createTableAndInsertValues() {
     `INSERT INTO geodata (${createTableColString}) VALUES ${valuesString}`
   );
   const res = await alasql.promise(
-    `SELECT * from geodata WHERE Start_Date != '' AND Strike_or_Protest_or_Lockout LIKE '%Strike%' ORDER BY Start_Date  `
+    `SELECT * from geodata WHERE Start_Date != '' AND Strike_or_Protest LIKE '%Strike%' ORDER BY Start_Date  `
   );
   initMap(res);
 }
+// ON LOAD EVENT (INITIALIZATION)
 window.addEventListener("load", async () => {
   await createTableAndInsertValues();
   // DATES
@@ -441,118 +515,92 @@ window.addEventListener("load", async () => {
   const approvedCheckBox = document.getElementById("approved");
   const strikeValueCheckBox = document.getElementById("strikeValue");
   const protestValueCheckBox = document.getElementById("protestValue");
-  const lockoutValueCheckBox = document.getElementById("lockoutValue");
-  const stateSelect = (new SlimSelect({
-    select: '#states'
-  }))
-  const industrySelect = (new SlimSelect({
-    select: '#industry'
-  }))
-  const workerDemandSelect = (new SlimSelect({
-    select: '#workerDemand'
-  }))
-  const unitSizeRange = document.getElementById("unitSize");
-  const NoOfEmpRange = document.getElementById("NoOfEmp");
   const searchLabourOrganization = document.getElementById("labOrgSearch");
   const filterButton = document.getElementById("filterButton");
+  const filterForm = document.getElementById("filterForm");
+  const reportButton = document.getElementById("reportButton");
+  reportButton.setAttribute("href",reportFormLink);
+  const noBox = Array.prototype.slice.call(document.getElementsByClassName('no-box'))[0]
+  console.log(noBox)
+  noBox.classList.add('filter-box');
+  noBox.classList.remove('no-box');
+  console.log(document.getElementById('filter-box-id'))
+  noBox.class =
+  filterForm.onsubmit = () => {
+    return false;
+  };
   const minMaxDateObj = await alasql.promise(
     `SELECT MIN(Start_Date) as fromDate, MAX(Start_Date) as endDate from geodata where Start_Date != ''`
   );
-  const minMaxUnitSizeObj = await alasql.promise(
-    `SELECT MAX(Bargaining_Unit_Size) as maxUnitSize, MIN(Bargaining_Unit_Size) as minUnitSize from geodata`
-  );
-  const minMaxNoOfEmpObj = await alasql.promise(
-    `SELECT MAX(Approximate_Number_of_Employees) as maxNoOfEmpRange, MIN(Approximate_Number_of_Employees) as minNoOfEmpRange from geodata`
-  );
-  console.log(JSON.stringify(minMaxNoOfEmpObj));
   // TYPE
-  lockoutValueCheckBox.checked = true;
-  protestValueCheckBox.checked = true;
+  // lockoutValueCheckBox.checked = true;
+  // protestValueCheckBox.checked = true;
   strikeValueCheckBox.checked = true;
   // DATE
   fromDate.value = minMaxDateObj[0].fromDate;
   endDate.value = minMaxDateObj[0].endDate;
   // STATES
-  const stateElement = document.getElementById("states")
-  STATE_LIST.forEach((val) => {
-    var option = document.createElement("option");
-    option.value = val;
-    option.text = val;
-    stateElement.appendChild(option);
-  });
+  const stateElement = document.getElementById("states");
   // INDUSTRY
-  const industryElement = document.getElementById("industry")
-  INDUSTRY_LIST.forEach((val) => {
-    var option = document.createElement("option");
-    option.value = val;
-    option.text = val;
-    industryElement.appendChild(option);
-  });
+  const industryElement = document.getElementById("industry");
   // WORKER DEMAND
-  const wDElement = document.getElementById("workerDemand")
-  WORKER_DEMAND.forEach((val) => {
-    var option = document.createElement("option");
-    option.value = val;
-    option.text = val;
-    wDElement.appendChild(option);
-  });
+  const wDElement = document.getElementById("workerDemand");
+  // NO OF EMPLOYEES
+  const NoOfEmp = document.getElementById("NoOfEmp");
   // UNIT SIZE RANGE
-  unitSizeRange.setAttribute("min", minMaxUnitSizeObj[0].minUnitSize);
-  unitSizeRange.setAttribute("max", minMaxUnitSizeObj[0].maxUnitSize);
-  unitSizeRange.value = minMaxUnitSizeObj[0].maxUnitSize;
-  const maxUnitSizeLabel = document.getElementById("maxUnitSizeLabel")
-  maxUnitSizeLabel.innerHTML = minMaxUnitSizeObj[0].maxUnitSize;
-  document.getElementById("minUnitSizeLabel").innerHTML =
-    minMaxUnitSizeObj[0].minUnitSize;
-  unitSizeRange.onchange = (e) => {
-    maxUnitSizeLabel.innerHTML = unitSizeRange.value
-  }
-  // NO OF EMPLYEES
-  NoOfEmpRange.setAttribute("min", minMaxNoOfEmpObj[0].minNoOfEmpRange);
-  NoOfEmpRange.setAttribute("max", minMaxNoOfEmpObj[0].maxNoOfEmpRange);
-  NoOfEmpRange.value = minMaxNoOfEmpObj[0].maxNoOfEmpRange;
-  const maxNoOfEmpLabel = document.getElementById("maxNoOfEmpLabel")
-  maxNoOfEmpLabel.innerHTML = minMaxNoOfEmpObj[0].maxNoOfEmpRange;
-  document.getElementById("minNoOfEmpLabel").innerHTML =
-    minMaxNoOfEmpObj[0].minNoOfEmpRange;
-  NoOfEmpRange.onchange = (e) => {
-    maxNoOfEmpLabel.innerHTML = NoOfEmpRange.value
-  }
-  console.log(fromDate.value, "<-----------------fromDate.value");
-  console.log(endDate.value, "<-----------------endDate.value");
+  const unitSize = document.getElementById("unitSize");
+  // DURATION
+  const duration = document.getElementById("duration");
+  // ADD OPTIONS FROM OPTIONS LIST
+  selectCreator(Object.keys(UNIT_SIZE), unitSize);
+  selectCreator(Object.keys(NO_OF_EMPLOEES), NoOfEmp);
+  selectCreator(Object.keys(DURATION_ARRAY), duration);
+  selectCreator(WORKER_DEMAND, wDElement);
+  selectCreator(INDUSTRY_LIST, industryElement);
+  selectCreator(STATE_LIST, stateElement);
+  // SET SLIM SELECT
+  const stateSelect = new SlimSelect({
+    select: "#states",
+  });
+  const industrySelect = new SlimSelect({
+    select: "#industry",
+  });
+  const workerDemandSelect = new SlimSelect({
+    select: "#workerDemand",
+  });
+  const unitSizeSelect = new SlimSelect({
+    select: "#unitSize",
+  });
+  const durationSelect = new SlimSelect({
+    select: "#duration",
+  });
+  const NoOfEmpSelect = new SlimSelect({
+    select: "#NoOfEmp",
+  });
+  // ON SUMBIT OF FILTER FORM
   filterButton.onclick = async (event) => {
-    console.log(fromDate.value, "<-----------------fromDate.value");
-    console.log(endDate.value, "<-----------------endDate.value");
-    console.log(
-      approvedCheckBox.checked,
-      "<-----------------approvedCheckBox.value"
-    );
-    console.log(stateSelect.value, "<-----------------stateSelect.value");
     const typeArray = [];
-    console.log(protestValueCheckBox);
     if (strikeValueCheckBox.checked) {
       typeArray.push("Strike");
     }
     if (protestValueCheckBox.checked) {
       typeArray.push("Protest");
     }
-    if (lockoutValueCheckBox.checked) {
-      typeArray.push("Lockout");
-    }
-    const paramValue = createParamObject(
-      fromDate.value,
-      endDate.value,
-      typeArray,
-      approvedCheckBox.checked,
-      workerDemandSelect.selected(),
-      stateSelect.selected(),
-      industrySelect.selected(),
-      NoOfEmpRange.value,
-      unitSizeRange.value,
-      minMaxUnitSizeObj[0].maxUnitSize,
-      minMaxNoOfEmpObj[0].maxNoOfEmpRange,
-      searchLabourOrganization.value,
-    );
+
+    const paramValue = {
+      fromDate: fromDate.value,
+      endDate: endDate.value,
+      typeArray: typeArray,
+      Authorized: approvedCheckBox.checked,
+      workerDemandsValue: workerDemandSelect.selected(),
+      stateValue: stateSelect.selected(),
+      industryValue: industrySelect.selected(),
+      NoOfEmp: NoOfEmpSelect.selected(),
+      unitSize: unitSizeSelect.selected(),
+      duration: durationSelect.selected(),
+      searchTextLO: searchLabourOrganization.value,
+    };
+
     console.log(paramValue);
     let cString = "";
     let filterCount = 0;
@@ -569,54 +617,33 @@ window.addEventListener("load", async () => {
       }
     });
     console.log(cString);
-    const queryString = `SELECT * from geodata WHERE ${cString}`;
+    const queryString = `SELECT * from geodata WHERE ${cString} ORDER BY Start_Date`;
     console.log(queryString);
     const res = await alasql.promise(queryString);
     initMap(res);
+
     console.log(res);
   };
 });
-
-function createParamObject(
-  fromDate,
-  endDate,
-  typeArray,
-  Authorized,
-  workerDemandsValue,
-  stateValue,
-  industryValue,
-  NoOfEmp,
-  unitSize,
-  maxUnitSize,
-  maxNoOfEmp,
-  searchTextLO
-) {
-  return {
-    fromDate,
-    endDate,
-    typeArray,
-    Authorized,
-    workerDemandsValue,
-    stateValue,
-    industryValue,
-    NoOfEmp,
-    unitSize,
-    maxUnitSize,
-    maxNoOfEmp,
-    searchTextLO
-  };
-}
 
 // Initialize and add the map
 function initMap(geodata) {
   let infowindow = null;
   let currWindow = false;
   const listDiv = document.getElementById("list-box");
+  const resultCountDiv = document.getElementById("resultCount");
+
+  if(geodata.length){
+    resultCountDiv.innerHTML = `<span class="resultText"><strong>${geodata.length}</strong> Results Found</span>`;
+  }else{
+    resultCountDiv.innerHTML = `It looks like you've requested information we haven't accounted for yet. Would you like to <a target="_blank" href="${reportFormLink}">report</a> a new strike or protest?`
+  }
   listDiv.innerHTML = "";
   function createInfoWindow(strike, marker) {
     if (infowindow) {
       infowindow.close();
     }
+    console.log('Outside')
     infowindow = new google.maps.InfoWindow({
       content: createContentString(strike),
     });
@@ -626,20 +653,48 @@ function initMap(geodata) {
     const card = document.createElement("div");
     const chkinput = document.createElement("input");
     const chklabel = document.createElement("label");
+    const labelDiv = document.createElement("div");
+    const dateDiv = document.createElement("div");
+    const infoDiv = document.createElement("div");
+    const employerDiv = document.createElement("div");
+    const loDiv = document.createElement("div");
+    const chkId = `chkinput-${strike.positionId}`
     card.setAttribute("class", "tab");
     chklabel.setAttribute("class", "tab-label");
-    chklabel.setAttribute("for", strike.positionId);
+    chklabel.setAttribute("for", chkId);
+    labelDiv.setAttribute("class", "labelDiv");
+    chklabel.append(labelDiv);
     chkinput.setAttribute("type", "checkbox");
-    chkinput.setAttribute("id", strike.positionId);
+    chkinput.setAttribute("id",chkId );
     chkinput.setAttribute("class", "hidechk");
     const cardBody = document.createElement("div");
     cardBody.setAttribute("class", "tab-content");
+    dateDiv.setAttribute("class", "date-card");
+    infoDiv.setAttribute("class", "info-card");
     cardBody.innerHTML = createContentString(strike);
-    chklabel.innerHTML = `${strike.Employer} - ${strike.Labor_Organization} -  ${strike.Start_Date}`;
+    const startDate = document.createElement("div");
+    const endDate = document.createElement("div");
+    startDate.innerHTML = `<strong>From</strong>: ${formatDateToMMDDYYYY(strike.Start_Date)}`;
+    endDate.innerHTML = strike.End_Date
+      ? `<strong>To</strong>: ${formatDateToMMDDYYYY(strike.End_Date)}`
+      : "";
+    employerDiv.innerHTML = strike.Employer
+      ? `<strong>Employer</strong>: ${strike.Employer}`
+      : "";
+    loDiv.innerHTML = strike.Labor_Organization
+      ? `<strong>Labor Organization</strong>: ${strike.Labor_Organization}`
+      : "";
+    infoDiv.append(employerDiv);
+    infoDiv.append(loDiv);
+    dateDiv.append(startDate);
+    dateDiv.append(endDate);
+    labelDiv.append(dateDiv);
+    labelDiv.append(infoDiv);
     card.append(chkinput);
     card.append(chklabel);
     card.append(cardBody);
     chkinput.addEventListener("change", (e) => {
+      console.log(e.target.checked,'<-----------------e.target.checked')
       if (e.target.checked) {
         const strikePosition = convertLatLngStringToObj(
           strike["Latitude_Longitude"]
@@ -647,7 +702,7 @@ function initMap(geodata) {
         // map.setZoom(15);
         // map.panTo(strikePosition);
         createInfoWindow(strike, marker);
-        addBounceToMarkers(strike)
+        // addBounceToMarkers(strike)
       }
     });
 
@@ -655,27 +710,75 @@ function initMap(geodata) {
   }
   function createContentString(strike) {
     let htmlString = "";
+    console.log('hy')
     Object.keys(tableDict).forEach((keyName) => {
       // console.log(strike[keyName])
       const colObj = tableDict[keyName];
       if (colObj.name == "source") {
         let sourceString = strike[colObj.name];
-        if (sourceString.indexOf("1. ") === -1) {
-          htmlString += `<strong>${keyName}</strong> : <a href="${sourceString}" target="_blank" rel="noopener noreferrer" ">Source</a> </br>`;
-        } else {
-          let finalString = "";
-          let sourceStringArray = sourceString.split("\\n");
-          let count = 0;
-          sourceStringArray.forEach((string, index) => {
-            if (string) {
-              count = count + 1;
-              finalString += ` <a href="${string
-                .replace(`${count}.`, "")
-                .trim()}" target="_blank" rel="noopener noreferrer">Source ${count}</a> `;
+        const sourceArray = sourceString.split(";");
+        const htmlSourceString = sourceArray.map((s, i) => {
+          return `<a href="${s.trim()}" target="_blank" rel="noopener noreferrer">Source ${
+            i + 1
+          }</a>`;
+        });
+        htmlString += `<strong>${keyName}</strong> : ${htmlSourceString} </br>`;
+      } else if (colObj.name == "Latitude_Longitude"){
+        htmlString+= ''
+      } else if (
+        strike[colObj.name] &&
+        (colObj.name === "Start_Date" || colObj.name === "End_Date")
+      ) {
+        htmlString += `<strong>${keyName}</strong> : ${formatDateToMMDDYYYY(
+          strike[colObj.name]
+        )} </br>`;
+      } else if (strike[colObj.name] && colObj.name === "connectedRow") {
+        const connectedRowArray =
+          window.sameLocationDictionary[strike["connectedRow"]].array;
+        const otherLocationsString = connectedRowArray
+          .map((loc, locIndex) => {
+            let tempMarker = null;
+            window.markerArray.forEach((m, i) => {
+              if (m.marker.get("id") === loc) {
+                tempMarker = m;
+              }
+            });
+            if (
+              tempMarker &&
+              tempMarker.strike["positionId"] !== strike["positionId"]
+            ) {
+              const strikePosition = convertLatLngStringToObj(
+                tempMarker.strike["Latitude_Longitude"]
+              );
+
+              setTimeout(() => {
+                document.getElementById(loc).onclick = () => {
+                  console.log('sxaxsxs')
+                  map.setZoom(15);
+                  map.panTo(strikePosition);
+                  createInfoWindow(tempMarker.strike, tempMarker.marker);
+                };
+              }, 2000);
+              return `<div class="addressLink" id="${loc}">${
+                tempMarker.strike["Address"]
+                  ? tempMarker.strike["Address"] + ", "
+                  : ""
+              }${
+                tempMarker.strike["City"]
+                  ? tempMarker.strike["City"] + ", "
+                  : ""
+              }${
+                tempMarker.strike["State"] ? tempMarker.strike["State"] : ""
+              } </div><br/>`;
+            } else {
+              return "";
             }
-          });
-          htmlString += `<strong>${keyName}</strong> : ${finalString} </br>`;
-        }
+          })
+          .join("");
+        htmlString += `<strong>These are the ${
+          connectedRowArray.length - 1
+        } labor actions that are connected to this labor action</strong><br>`;
+        htmlString += otherLocationsString;
       } else if (strike[colObj.name] && colObj.name !== "positionId") {
         htmlString += `<strong>${keyName}</strong> : ${
           strike[colObj.name]
@@ -692,39 +795,44 @@ function initMap(geodata) {
     center: { lat: 39.7427825897816, lng: -101.69676383031963 },
   });
   window.markerArray = [];
-  window.sameLocationDictionary = {}
+  window.sameLocationDictionary = {};
   geodata.forEach((datum) => {
-    const { connectedRow,positionId } = datum;
-    if(connectedRow){
-      console.log(connectedRow)
-      if(window.sameLocationDictionary[connectedRow]){
-        window.sameLocationDictionary[connectedRow].array.push(positionId)
-      }else{
-        window.sameLocationDictionary[connectedRow] = {toggle:false,array:[positionId]}
+    const { connectedRow, positionId } = datum;
+    if (connectedRow) {
+      if (window.sameLocationDictionary[connectedRow]) {
+        window.sameLocationDictionary[connectedRow].array.push(positionId);
+      } else {
+        window.sameLocationDictionary[connectedRow] = {
+          toggle: false,
+          array: [positionId],
+        };
       }
     }
-  })
-  function addBounceToMarkers(strike){
-    if(window.sameLocationDictionary[strike['connectedRow']]){
+  });
+  function addBounceToMarkers(strike) {
+    if (window.sameLocationDictionary[strike["connectedRow"]]) {
       const bounds = new google.maps.LatLngBounds();
-      window.sameLocationDictionary[strike['connectedRow']].array.forEach((loc, locIndex) => {
-        window.markerArray.forEach((m,i) => {
-          if(m.get('id') === loc){
-            if(window.sameLocationDictionary[strike['connectedRow']].toggle){
-              m.setAnimation(null);
-            }else{
-              m.setAnimation(google.maps.Animation.BOUNCE);
-              bounds.extend(m.getPosition());
+      window.sameLocationDictionary[strike["connectedRow"]].array.forEach(
+        (loc, locIndex) => {
+          window.markerArray.forEach((m, i) => {
+            if (m.get("id") === loc) {
+              if (
+                window.sameLocationDictionary[strike["connectedRow"]].toggle
+              ) {
+                m.setAnimation(null);
+              } else {
+                m.setAnimation(google.maps.Animation.BOUNCE);
+                bounds.extend(m.getPosition());
+              }
             }
-              
-          }
-        })
-      })
+          });
+        }
+      );
       map.fitBounds(bounds);
-      window.sameLocationDictionary[strike['connectedRow']].toggle = !window.sameLocationDictionary[strike['connectedRow']].toggle
+      window.sameLocationDictionary[strike["connectedRow"]].toggle = !window
+        .sameLocationDictionary[strike["connectedRow"]].toggle;
     }
   }
-  console.log(window.sameLocationDictionary['23'])
   // The marker, positioned at Uluru
   geodata.forEach((strike, index) => {
     if (strike["Latitude_Longitude"]) {
@@ -736,21 +844,26 @@ function initMap(geodata) {
         map: map,
         title: strike.City,
       });
-      marker.set("id", strike['positionId']);
-      window.markerArray.push(marker);
-      const card = createCard(strike, marker);
-      listDiv.append(card);
-      
+      marker.set("id", strike["positionId"]);
+      window.markerArray.push({ marker, strike });
       marker.addListener("click", () => {
         createInfoWindow(strike, marker);
-        // console.log(next,'<-----------------next')
-        console.log('In',window.sameLocationDictionary[strike['connectedRow']],strike['connectedRow'])
-        addBounceToMarkers(strike)
+        // addBounceToMarkers(strike)
       });
     }
   });
-  new MarkerClusterer(map, window.markerArray, {
-    imagePath:
-      "https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m",
-  });
+  window.markerArray.forEach((obj, index) => {
+          ///////
+      const card = createCard(obj.strike, obj.marker);
+      listDiv.append(card);
+      ///////
+  })
+  new MarkerClusterer(
+    map,
+    window.markerArray.map((m) => m.marker),
+    {
+      imagePath:
+        "https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m",
+    }
+  );
 }

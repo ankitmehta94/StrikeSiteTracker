@@ -472,7 +472,7 @@ async function createTableAndInsertValues() {
         console.error("Mismatch");
       }
     }
-    // IF SINGLE LOCATION STRIKE 
+    // IF SINGLE LOCATION STRIKE
     else if (strikeNumber === 1) {
       let singleValueString = "";
       tableDictArray.forEach((key, index) => {
@@ -699,8 +699,8 @@ function initMap(geodata) {
         const strikePosition = convertLatLngStringToObj(
           strike["Latitude_Longitude"]
         );
-        // map.setZoom(15);
-        // map.panTo(strikePosition);
+        map.setZoom(15);
+        map.panTo(strikePosition);
         createInfoWindow(strike, marker);
         // addBounceToMarkers(strike)
       }
